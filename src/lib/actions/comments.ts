@@ -3,7 +3,8 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { comments, db, expenses } from "@/lib/db";
-import { isAdmin, requireUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
+import { canDeleteComment } from "@/lib/permissions";
 import { commentSchema, idSchema } from "@/lib/validation/schemas";
 import { fail, guard, logActivity, newId, zodFail, type ActionResult } from "./shared";
 
@@ -56,7 +57,7 @@ export async function deleteCommentAction(input: unknown): Promise<ActionResult>
       .where(and(eq(comments.id, parsed.data.id), isNull(comments.deletedAt)))
       .limit(1);
     if (!comment) return fail("El comentario no existe.");
-    if (comment.userId !== actor.id && !isAdmin(actor)) {
+    if (!canDeleteComment(actor, comment)) {
       return fail("Solo puedes borrar tus propios comentarios.");
     }
 

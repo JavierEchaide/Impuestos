@@ -3,7 +3,8 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, payments } from "@/lib/db";
-import { isAdmin, requireUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
+import { canDeletePayment, canRegisterPayment } from "@/lib/permissions";
 import { idSchema, paymentSchema } from "@/lib/validation/schemas";
 import { activeUserNames, getActiveSection, money } from "./guards";
 import { fail, guard, logActivity, newId, zodFail, type ActionResult } from "./shared";
@@ -21,8 +22,7 @@ export async function createPaymentAction(
     if (!parsed.success) return zodFail(parsed.error);
     const data = parsed.data;
 
-    const involved = data.fromUserId === actor.id || data.toUserId === actor.id;
-    if (!involved && !isAdmin(actor)) {
+    if (!canRegisterPayment(actor, data)) {
       return fail("Solo puedes registrar pagos en los que participas tú.");
     }
 
@@ -79,7 +79,7 @@ export async function deletePaymentAction(input: unknown): Promise<ActionResult>
       .where(and(eq(payments.id, parsed.data.id), isNull(payments.deletedAt)))
       .limit(1);
     if (!existing) return fail("El pago no existe o ya se borró.");
-    if (existing.createdBy !== actor.id && !isAdmin(actor)) {
+    if (!canDeletePayment(actor, existing)) {
       return fail("Solo puedes borrar los pagos que has registrado tú.");
     }
 

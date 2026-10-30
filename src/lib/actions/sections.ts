@@ -3,7 +3,8 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, sections } from "@/lib/db";
-import { isAdmin, requireUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
+import { canEditSection } from "@/lib/permissions";
 import { sectionArchiveSchema, sectionSchema, sectionUpdateSchema } from "@/lib/validation/schemas";
 import { ActionError, guard, logActivity, newId, zodFail, type ActionResult } from "./shared";
 
@@ -40,7 +41,7 @@ export async function createSectionAction(input: unknown): Promise<ActionResult<
 async function loadEditableSection(actor: { id: string; role: "admin" | "member" }, id: string) {
   const [section] = await db.select().from(sections).where(eq(sections.id, id)).limit(1);
   if (!section) throw new ActionError("La sección no existe.");
-  if (section.createdBy !== actor.id && !isAdmin(actor)) {
+  if (!canEditSection(actor, section)) {
     throw new ActionError("Solo quien creó la sección o el administrador puede modificarla.");
   }
   return section;

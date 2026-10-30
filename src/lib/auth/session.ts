@@ -16,7 +16,9 @@ export interface AppUser {
 
 /** Lee la sesión de la cookie y comprueba en BD que el usuario sigue activo. Una vez por petición. */
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
-  const session = await auth.api.getSession({ headers: await headers() });
+  // headers() primero: durante el build marca la ruta como dinámica antes de tocar la autenticación.
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
   if (!session) return null;
   const u = session.user as typeof session.user & {
     username?: string | null;

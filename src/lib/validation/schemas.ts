@@ -63,6 +63,8 @@ const participantSchema = z.object({
 });
 
 const expenseBase = z.object({
+  /** Id propuesto por el cliente para que la vista previa del reparto coincida con el resultado final. */
+  clientId: z.uuid().optional(),
   sectionId: id,
   title: z.string().trim().min(1, "Pon un título").max(80, "Máximo 80 caracteres"),
   amountCents: cents,

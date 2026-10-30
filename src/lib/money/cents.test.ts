@@ -68,6 +68,8 @@ describe("porcentajes y participaciones", () => {
     expect(parsePercentToBp("100 %")).toBe(10000);
     expect(parsePercentToBp("12,345")).toBeNull();
     expect(bpToInput(3333)).toBe("33,33");
+    expect(bpToInput(5000)).toBe("50");
+    expect(bpToInput(1000)).toBe("10");
   });
 
   it("parsea participaciones decimales", () => {

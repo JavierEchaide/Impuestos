@@ -2,7 +2,10 @@
  * Aplica las migraciones SQL de ./drizzle a la base de datos.
  * Uso: npm run db:migrate   (lee DATABASE_URL_UNPOOLED o DATABASE_URL del entorno / .env)
  */
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// .env.local es lo que genera `vercel env pull`; .env es el archivo local de siempre.
+loadEnv({ path: [".env.local", ".env"], quiet: true });
 import path from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb } from "../src/lib/db/client";

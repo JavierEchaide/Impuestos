@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { INITIAL_DEBT_CATEGORY } from "@/lib/categories";
 import { db, expenseSplits, expenses } from "@/lib/db";
 import { computeSplit } from "@/lib/money";
-import { isAdmin, requireUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
+import { canAdminister, canModifyExpense } from "@/lib/permissions";
 import {
   expenseSchema,
   expenseUpdateSchema,
@@ -45,7 +46,7 @@ export async function createExpenseAction(
     const section = await getActiveSection(data.sectionId);
     const names = await activeUserNames([data.paidBy, ...data.participants.map((p) => p.userId)]);
 
-    const id = newId();
+    const id = data.clientId ?? newId();
     const parts = computeSplit(data.amountCents, data.splitType, data.participants, id);
 
     await db.transaction(async (tx) => {
@@ -212,7 +213,7 @@ export async function deleteExpenseAction(input: unknown): Promise<ActionResult>
 export async function restoreExpenseAction(input: unknown): Promise<ActionResult> {
   return guard(async () => {
     const actor = await requireUser();
-    if (!isAdmin(actor)) return fail("Solo el administrador puede restaurar gastos.");
+    if (!canAdminister(actor)) return fail("Solo el administrador puede restaurar gastos.");
     const parsed = idSchema.safeParse(input);
     if (!parsed.success) return zodFail(parsed.error);
 
@@ -239,19 +240,14 @@ export async function restoreExpenseAction(input: unknown): Promise<ActionResult
   });
 }
 
-/**
- * Miembro: solo sus gastos. Admin: cualquiera. Las deudas iniciales las
- * gestiona únicamente el admin, aunque las haya creado otra persona.
- */
+/** Lanza un error de negocio con el motivo adecuado si el usuario no puede tocar este gasto. */
 function assertCanModify(
   actor: { id: string; role: "admin" | "member" },
   expense: { createdBy: string; category: string },
 ) {
-  if (isAdmin(actor)) return;
+  if (canModifyExpense(actor, expense)) return;
   if (expense.category === INITIAL_DEBT_CATEGORY) {
     throw new ActionError("Las deudas iniciales solo las puede modificar el administrador.");
   }
-  if (expense.createdBy !== actor.id) {
-    throw new ActionError("Solo puedes modificar los gastos que has creado tú.");
-  }
+  throw new ActionError("Solo puedes modificar los gastos que has creado tú.");
 }

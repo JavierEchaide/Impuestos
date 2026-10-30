@@ -92,9 +92,9 @@ export function parsePercentToBp(input: string): number | null {
   return parseDecimalToScaled(input, 2);
 }
 
-/** 3333 -> "33,33" */
+/** 3333 -> "33,33"; 5000 -> "50" */
 export function bpToInput(bp: number): string {
-  return centsToInput(bp);
+  return centiSharesToInput(bp);
 }
 
 /** "1,5" -> 150 (centésimas de participación). */

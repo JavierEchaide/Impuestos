@@ -8,7 +8,10 @@
  *
  * Uso: npm run db:seed   (lee DATABASE_URL del entorno / .env)
  */
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// .env.local es lo que genera `vercel env pull`; .env es el archivo local de siempre.
+loadEnv({ path: [".env.local", ".env"], quiet: true });
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { createAuth } from "../src/lib/auth/config";
